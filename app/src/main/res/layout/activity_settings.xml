@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/pink"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Настройки"
+            android:textSize="22sp"
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Аватары и имена -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/ivSettingsAvatar1"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_person"
+                    android:background="@drawable/pink_background"
+                    android:contentDescription="Ваш аватар"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:scaleType="centerCrop" />
+
+                <EditText
+                    android:id="@+id/etSettingsName1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:hint="Имя"
+                    android:textColor="@color/black"
+                    android:background="@null"
+                    android:gravity="center"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/ivSettingsAvatar2"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@drawable/ic_person"
+                    android:background="@drawable/pink_background"
+                    android:contentDescription="Аватар партнёра"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:scaleType="centerCrop" />
+
+                <EditText
+                    android:id="@+id/etSettingsName2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:hint="Имя"
+                    android:textColor="@color/black"
+                    android:background="@null"
+                    android:gravity="center"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Дата начала отношений -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Дата начала отношений"
+            android:textColor="@color/black"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnChangeDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="30.10.2020"
+            android:textColor="@color/dark_pink"
+            android:background="@drawable/pink_background"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Фото для виджета -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Фото для виджета"
+            android:textColor="@color/black"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Большое фото -->
+        <ImageView
+            android:id="@+id/ivWidgetBigPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:src="@drawable/pink_background"
+            android:contentDescription="Большое фото для виджета"
+            android:clickable="true"
+            android:focusable="true"
+            android:scaleType="centerCrop"
+            android:layout_marginBottom="16dp" />
+
+        <!-- 3 маленьких фото в горизонтальном LinearLayout -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:id="@+id/ivWidgetSmallPhoto1"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/pink_background"
+                android:contentDescription="Маленькое фото 1"
+                android:clickable="true"
+                android:focusable="true"
+                android:scaleType="centerCrop"
+                android:layout_marginEnd="8dp" />
+
+            <ImageView
+                android:id="@+id/ivWidgetSmallPhoto2"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/pink_background"
+                android:contentDescription="Маленькое фото 2"
+                android:clickable="true"
+                android:focusable="true"
+                android:scaleType="centerCrop"
+                android:layout_marginEnd="8dp"
+                android:layout_marginStart="8dp" />
+
+            <ImageView
+                android:id="@+id/ivWidgetSmallPhoto3"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/pink_background"
+                android:contentDescription="Маленькое фото 3"
+                android:clickable="true"
+                android:focusable="true"
+                android:scaleType="centerCrop"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Сохранить"
+            android:backgroundTint="@color/dark_pink"
+            android:textColor="@color/white" />
+
+    </LinearLayout>
+</ScrollView>
