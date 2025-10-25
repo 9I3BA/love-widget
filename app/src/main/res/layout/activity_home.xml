@@ -165,12 +165,12 @@
             android:contentDescription="Settings" />
 
         <ImageButton
-            android:id="@+id/btnHome"
+            android:id="@+id/btnNotes"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/ic_home"
             android:background="@null"
-            android:contentDescription="Home" />
+            android:contentDescription="Notes"
+            android:src="@drawable/ic_notes" />
 
     </LinearLayout>
 
