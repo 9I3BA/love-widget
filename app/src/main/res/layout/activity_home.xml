@@ -165,13 +165,13 @@
             android:contentDescription="Settings" />
 
         <ImageButton
-            android:id="@+id/btnHome"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_home"
-            android:background="@null"
-            android:contentDescription="Home" />
-
+            android:id="@+id/btnNotes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_notes"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Заметки"
+            android:layout_margin="16dp" />
     </LinearLayout>
 
 </LinearLayout>

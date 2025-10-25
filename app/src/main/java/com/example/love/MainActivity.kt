@@ -1,3 +1,4 @@
+// MainActivity.kt (без изменений)
 package com.example.love
 
 import android.content.Intent
@@ -12,10 +13,9 @@ class MainActivity : AppCompatActivity() {
 
         if (isFirstLaunch) {
             startActivity(Intent(this, WelcomeActivity::class.java))
-            finish()
         } else {
             startActivity(Intent(this, HomeActivity::class.java))
-            finish()
         }
+        finish() // завершаем MainActivity, чтобы нельзя было вернуться назад
     }
 }

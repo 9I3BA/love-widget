@@ -1,13 +1,21 @@
 package com.example.love
 
 import android.app.DatePickerDialog
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
+import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -24,12 +32,12 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var ivWidgetSmallPhoto2: ImageView
     private lateinit var ivWidgetSmallPhoto3: ImageView
 
-    private var avatar1Uri: Uri? = null
-    private var avatar2Uri: Uri? = null
-    private var bigPhotoUri: Uri? = null
-    private var smallPhoto1Uri: Uri? = null
-    private var smallPhoto2Uri: Uri? = null
-    private var smallPhoto3Uri: Uri? = null
+    private var avatar1File: File? = null
+    private var avatar2File: File? = null
+    private var bigPhotoFile: File? = null
+    private var smallPhoto1File: File? = null
+    private var smallPhoto2File: File? = null
+    private var smallPhoto3File: File? = null
     private var startDateMillis: Long = 0
 
     companion object {
@@ -64,77 +72,33 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadPreferences() {
-        try {
-            val prefs = getSharedPreferences("LoveWidget", MODE_PRIVATE)
+        val prefs = getSharedPreferences("LoveWidget", MODE_PRIVATE)
 
-            // Имена
-            etName1.setText(prefs.getString("name1", "Партнёр 1"))
-            etName2.setText(prefs.getString("name2", "Партнёр 2"))
+        etName1.setText(prefs.getString("name1", "Партнёр 1"))
+        etName2.setText(prefs.getString("name2", "Партнёр 2"))
 
-            // Дата
-            startDateMillis = prefs.getLong("startDate", System.currentTimeMillis())
-            updateDateButtonText()
+        startDateMillis = prefs.getLong("startDate", System.currentTimeMillis())
+        updateDateButtonText()
 
-            // Аватары
-            val avatar1Path = prefs.getString("avatar1", null)
-            val avatar2Path = prefs.getString("avatar2", null)
+        avatar1File = prefs.getString("avatar1_path", null)?.let { File(it) }
+        avatar2File = prefs.getString("avatar2_path", null)?.let { File(it) }
+        bigPhotoFile = prefs.getString("widgetBigPhoto_path", null)?.let { File(it) }
+        smallPhoto1File = prefs.getString("widgetSmallPhoto1_path", null)?.let { File(it) }
+        smallPhoto2File = prefs.getString("widgetSmallPhoto2_path", null)?.let { File(it) }
+        smallPhoto3File = prefs.getString("widgetSmallPhoto3_path", null)?.let { File(it) }
 
-            avatar1Path?.let { path ->
-                val file = File(path)
-                if (file.exists()) {
-                    avatar1Uri = Uri.fromFile(file)
-                    ivSettingsAvatar1.setImageURI(avatar1Uri)
-                }
-            }
+        setImageView(ivSettingsAvatar1, avatar1File)
+        setImageView(ivSettingsAvatar2, avatar2File)
+        setImageView(ivWidgetBigPhoto, bigPhotoFile)
+        setImageView(ivWidgetSmallPhoto1, smallPhoto1File)
+        setImageView(ivWidgetSmallPhoto2, smallPhoto2File)
+        setImageView(ivWidgetSmallPhoto3, smallPhoto3File)
+    }
 
-            avatar2Path?.let { path ->
-                val file = File(path)
-                if (file.exists()) {
-                    avatar2Uri = Uri.fromFile(file)
-                    ivSettingsAvatar2.setImageURI(avatar2Uri)
-                }
-            }
-
-            // Фото для виджета
-            val bigPhotoPath = prefs.getString("widgetBigPhoto", null)
-            val smallPhoto1Path = prefs.getString("widgetSmallPhoto1", null)
-            val smallPhoto2Path = prefs.getString("widgetSmallPhoto2", null)
-            val smallPhoto3Path = prefs.getString("widgetSmallPhoto3", null)
-
-            bigPhotoPath?.let { path ->
-                val file = File(path)
-                if (file.exists()) {
-                    bigPhotoUri = Uri.fromFile(file)
-                    ivWidgetBigPhoto.setImageURI(bigPhotoUri)
-                }
-            }
-
-            smallPhoto1Path?.let { path ->
-                val file = File(path)
-                if (file.exists()) {
-                    smallPhoto1Uri = Uri.fromFile(file)
-                    ivWidgetSmallPhoto1.setImageURI(smallPhoto1Uri)
-                }
-            }
-
-            smallPhoto2Path?.let { path ->
-                val file = File(path)
-                if (file.exists()) {
-                    smallPhoto2Uri = Uri.fromFile(file)
-                    ivWidgetSmallPhoto2.setImageURI(smallPhoto2Uri)
-                }
-            }
-
-            smallPhoto3Path?.let { path ->
-                val file = File(path)
-                if (file.exists()) {
-                    smallPhoto3Uri = Uri.fromFile(file)
-                    ivWidgetSmallPhoto3.setImageURI(smallPhoto3Uri)
-                }
-            }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
+    private fun setImageView(imageView: ImageView, file: File?) {
+        if (file?.exists() == true) {
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+            imageView.setImageURI(uri)
         }
     }
 
@@ -151,11 +115,12 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun openGallery(requestCode: Int) {
         try {
-            Intent(Intent.ACTION_PICK).also { intent ->
-                intent.type = "image/*"
-                startActivityForResult(intent, requestCode)
+            Intent(Intent.ACTION_PICK).apply {
+                type = "image/*"
+                startActivityForResult(this, requestCode)
             }
         } catch (e: Exception) {
+            Log.e("SettingsActivity", "Галерея недоступна", e)
             Toast.makeText(this, "Галерея недоступна", Toast.LENGTH_SHORT).show()
         }
     }
@@ -183,83 +148,82 @@ class SettingsActivity : AppCompatActivity() {
         btnDate.text = formatter.format(date)
     }
 
+    private fun copyUriToInternalFile(uri: Uri): File? {
+        return try {
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                val fileName = "photo_${System.currentTimeMillis()}.jpg"
+                val file = File(filesDir, fileName)
+
+                val bitmap = BitmapFactory.decodeStream(inputStream) ?: return null
+                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 400, 400, true)
+
+                FileOutputStream(file).use { outputStream ->
+                    scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
+                }
+
+                file
+            }
+        } catch (e: Exception) {
+            Log.e("SettingsActivity", "Ошибка копирования файла", e)
+            null
+        }
+    }
+
+    private fun bitmapToBase64(bitmap: Bitmap): String {
+        val baos = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
+        return Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT)
+    }
+
     private fun saveAndExit() {
         try {
             val editor = getSharedPreferences("LoveWidget", MODE_PRIVATE).edit()
 
-            // Сохраняем данные
             editor.putString("name1", etName1.text.toString().ifEmpty { "Партнёр 1" })
             editor.putString("name2", etName2.text.toString().ifEmpty { "Партнёр 2" })
             editor.putLong("startDate", startDateMillis)
 
-            // Сохраняем аватары (путь к файлу)
-            avatar1Uri?.let { uri ->
-                val filePath = uri.path
-                if (filePath != null) {
-                    editor.putString("avatar1", filePath)
-                }
+            // Сохраняем пути
+            editor.putString("avatar1_path", avatar1File?.absolutePath)
+            editor.putString("avatar2_path", avatar2File?.absolutePath)
+            editor.putString("widgetBigPhoto_path", bigPhotoFile?.absolutePath)
+            editor.putString("widgetSmallPhoto1_path", smallPhoto1File?.absolutePath)
+            editor.putString("widgetSmallPhoto2_path", smallPhoto2File?.absolutePath)
+            editor.putString("widgetSmallPhoto3_path", smallPhoto3File?.absolutePath)
+
+            // Сохраняем Base64 миниатюры для виджета
+            avatar1File?.let { file ->
+                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                val scaled = Bitmap.createScaledBitmap(bitmap, 80, 80, true)
+                editor.putString("avatar1_base64", bitmapToBase64(scaled))
             }
 
-            avatar2Uri?.let { uri ->
-                val filePath = uri.path
-                if (filePath != null) {
-                    editor.putString("avatar2", filePath)
-                }
-            }
-
-            // Сохраняем фото для виджета
-            bigPhotoUri?.let { uri ->
-                val filePath = uri.path
-                if (filePath != null) {
-                    editor.putString("widgetBigPhoto", filePath)
-                }
-            }
-
-            smallPhoto1Uri?.let { uri ->
-                val filePath = uri.path
-                if (filePath != null) {
-                    editor.putString("widgetSmallPhoto1", filePath)
-                }
-            }
-
-            smallPhoto2Uri?.let { uri ->
-                val filePath = uri.path
-                if (filePath != null) {
-                    editor.putString("widgetSmallPhoto2", filePath)
-                }
-            }
-
-            smallPhoto3Uri?.let { uri ->
-                val filePath = uri.path
-                if (filePath != null) {
-                    editor.putString("widgetSmallPhoto3", filePath)
-                }
+            avatar2File?.let { file ->
+                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                val scaled = Bitmap.createScaledBitmap(bitmap, 80, 80, true)
+                editor.putString("avatar2_base64", bitmapToBase64(scaled))
             }
 
             editor.apply()
-
-            // Устанавливаем результат для HomeActivity
+            updateWidgets()
             setResult(RESULT_OK)
             finish()
         } catch (e: Exception) {
-            Toast.makeText(this, "Ошибка сохранения", Toast.LENGTH_SHORT).show()
+            Log.e("SettingsActivity", "Ошибка при сохранении", e)
         }
     }
 
-    private fun copyUriToFile(uri: Uri): String? {
-        return try {
-            val inputStream = contentResolver.openInputStream(uri) ?: return null
-            val fileName = "photo_${System.currentTimeMillis()}.jpg"
-            val file = File(filesDir, fileName)
+    private fun updateWidgets() {
+        val appWidgetManager = AppWidgetManager.getInstance(this)
 
-            FileOutputStream(file).use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
+        val daysWidget = ComponentName(this, DaysTogetherWidget::class.java)
+        appWidgetManager.getAppWidgetIds(daysWidget).forEach { id ->
+            DaysTogetherWidget.updateAppWidget(this, appWidgetManager, id)
+        }
 
-            file.absolutePath
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+        val galleryWidget = ComponentName(this, PhotoGalleryWidget::class.java)
+        appWidgetManager.getAppWidgetIds(galleryWidget).forEach { id ->
+            PhotoGalleryWidget.updateAppWidget(this, appWidgetManager, id)
         }
     }
 
@@ -271,46 +235,28 @@ class SettingsActivity : AppCompatActivity() {
 
             when (requestCode) {
                 REQ_AVATAR1 -> {
-                    val filePath = copyUriToFile(uri)
-                    if (filePath != null) {
-                        avatar1Uri = Uri.fromFile(File(filePath))
-                        ivSettingsAvatar1.setImageURI(avatar1Uri)
-                    }
+                    avatar1File = copyUriToInternalFile(uri)
+                    setImageView(ivSettingsAvatar1, avatar1File)
                 }
                 REQ_AVATAR2 -> {
-                    val filePath = copyUriToFile(uri)
-                    if (filePath != null) {
-                        avatar2Uri = Uri.fromFile(File(filePath))
-                        ivSettingsAvatar2.setImageURI(avatar2Uri)
-                    }
+                    avatar2File = copyUriToInternalFile(uri)
+                    setImageView(ivSettingsAvatar2, avatar2File)
                 }
                 REQ_BIG_PHOTO -> {
-                    val filePath = copyUriToFile(uri)
-                    if (filePath != null) {
-                        bigPhotoUri = Uri.fromFile(File(filePath))
-                        ivWidgetBigPhoto.setImageURI(bigPhotoUri)
-                    }
+                    bigPhotoFile = copyUriToInternalFile(uri)
+                    setImageView(ivWidgetBigPhoto, bigPhotoFile)
                 }
                 REQ_SMALL_PHOTO1 -> {
-                    val filePath = copyUriToFile(uri)
-                    if (filePath != null) {
-                        smallPhoto1Uri = Uri.fromFile(File(filePath))
-                        ivWidgetSmallPhoto1.setImageURI(smallPhoto1Uri)
-                    }
+                    smallPhoto1File = copyUriToInternalFile(uri)
+                    setImageView(ivWidgetSmallPhoto1, smallPhoto1File)
                 }
                 REQ_SMALL_PHOTO2 -> {
-                    val filePath = copyUriToFile(uri)
-                    if (filePath != null) {
-                        smallPhoto2Uri = Uri.fromFile(File(filePath))
-                        ivWidgetSmallPhoto2.setImageURI(smallPhoto2Uri)
-                    }
+                    smallPhoto2File = copyUriToInternalFile(uri)
+                    setImageView(ivWidgetSmallPhoto2, smallPhoto2File)
                 }
                 REQ_SMALL_PHOTO3 -> {
-                    val filePath = copyUriToFile(uri)
-                    if (filePath != null) {
-                        smallPhoto3Uri = Uri.fromFile(File(filePath))
-                        ivWidgetSmallPhoto3.setImageURI(smallPhoto3Uri)
-                    }
+                    smallPhoto3File = copyUriToInternalFile(uri)
+                    setImageView(ivWidgetSmallPhoto3, smallPhoto3File)
                 }
             }
         }
