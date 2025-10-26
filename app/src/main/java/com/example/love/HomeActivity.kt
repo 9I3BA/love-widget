@@ -8,16 +8,13 @@ import androidx.appcompat.app.AppCompatActivity
 import java.io.File
 import java.util.*
 import kotlin.math.abs
-import android.widget.ImageButton
-import androidx.core.content.FileProvider
-import com.example.love.NoteActivity // ← добавьте этот импорт!
 
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var tvDaysTogether: TextView
-    private lateinit var btnCalendar: ImageButton
-    private lateinit var btnSettings: ImageButton
-    private lateinit var btnNotes: ImageButton  // <-- изменено на ImageButton
+    private lateinit var btnCalendar: ImageView
+    private lateinit var btnSettings: ImageView
+    private lateinit var btnHome: ImageView
     private lateinit var ivYou: ImageView
     private lateinit var ivPartner: ImageView
     private lateinit var tvName1: TextView
@@ -39,7 +36,7 @@ class HomeActivity : AppCompatActivity() {
         tvDaysTogether = findViewById(R.id.tvDaysTogether)
         btnCalendar = findViewById(R.id.btnCalendar)
         btnSettings = findViewById(R.id.btnSettings)
-        btnNotes = findViewById(R.id.btnNotes)  // <-- исправлено
+        btnHome = findViewById(R.id.btnHome)
         ivYou = findViewById(R.id.ivYou)
         ivPartner = findViewById(R.id.ivPartner)
         tvName1 = findViewById(R.id.tvName1)
@@ -52,10 +49,6 @@ class HomeActivity : AppCompatActivity() {
         loadProfileData()
         calculateDaysTogether()
 
-        val btnNotes = findViewById<ImageButton>(R.id.btnNotes)
-        btnNotes.setOnClickListener {
-            startActivity(Intent(this, NoteActivity::class.java))
-        }
         btnCalendar.setOnClickListener {
             startActivity(Intent(this, AnniversaryActivity::class.java))
         }
@@ -65,12 +58,16 @@ class HomeActivity : AppCompatActivity() {
             startActivityForResult(intent, REQUEST_SETTINGS)
         }
 
+        btnHome.setOnClickListener {
+            // уже на главном экране
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == REQUEST_SETTINGS && resultCode == RESULT_OK) {
+            // Обновляем все данные после возврата из настроек
             loadProfileData()
             calculateDaysTogether()
         }
@@ -79,50 +76,87 @@ class HomeActivity : AppCompatActivity() {
     private fun loadProfileData() {
         val prefs = getSharedPreferences("LoveWidget", MODE_PRIVATE)
 
-        tvName1.text = prefs.getString("name1", "Партнёр 1")
-        tvName2.text = prefs.getString("name2", "Партнёр 2")
+        // Загружаем имена
+        val name1 = prefs.getString("name1", "Партнёр 1")
+        val name2 = prefs.getString("name2", "Партнёр 2")
+        tvName1.text = name1
+        tvName2.text = name2
 
-        // Загружаем аватарки по ключам с _path
-        loadAvatar(prefs.getString("avatar1_path", null), ivYou)
-        loadAvatar(prefs.getString("avatar2_path", null), ivPartner)
+        // Загружаем аватары
+        val avatar1Path = prefs.getString("avatar1", null)
+        val avatar2Path = prefs.getString("avatar2", null)
 
-        // Фото для виджета
-        loadPhoto(prefs.getString("widgetBigPhoto_path", null), ivWidgetBigPhoto)
-        loadPhoto(prefs.getString("widgetSmallPhoto1_path", null), ivWidgetSmallPhoto1)
-        loadPhoto(prefs.getString("widgetSmallPhoto2_path", null), ivWidgetSmallPhoto2)
-        loadPhoto(prefs.getString("widgetSmallPhoto3_path", null), ivWidgetSmallPhoto3)
-    }
-
-    private fun loadAvatar(path: String?, imageView: ImageView) {
-        if (path != null) {
+        avatar1Path?.let { path ->
             val file = File(path)
             if (file.exists()) {
-                try {
-                    val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-                    imageView.setImageURI(uri)
-                    return
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                ivYou.setImageURI(Uri.fromFile(file))
+            } else {
+                ivYou.setImageResource(R.drawable.ic_person)
             }
+        } ?: run {
+            ivYou.setImageResource(R.drawable.ic_person)
         }
-        imageView.setImageResource(R.drawable.ic_person)
-    }
 
-    private fun loadPhoto(path: String?, imageView: ImageView) {
-        if (path != null) {
+        avatar2Path?.let { path ->
             val file = File(path)
             if (file.exists()) {
-                try {
-                    val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-                    imageView.setImageURI(uri)
-                    return
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                ivPartner.setImageURI(Uri.fromFile(file))
+            } else {
+                ivPartner.setImageResource(R.drawable.ic_person)
             }
+        } ?: run {
+            ivPartner.setImageResource(R.drawable.ic_person)
         }
-        imageView.setImageResource(R.drawable.pink_background)
+
+        // Загружаем фото для виджета
+        val bigPhotoPath = prefs.getString("widgetBigPhoto", null)
+        val smallPhoto1Path = prefs.getString("widgetSmallPhoto1", null)
+        val smallPhoto2Path = prefs.getString("widgetSmallPhoto2", null)
+        val smallPhoto3Path = prefs.getString("widgetSmallPhoto3", null)
+
+        bigPhotoPath?.let { path ->
+            val file = File(path)
+            if (file.exists()) {
+                ivWidgetBigPhoto.setImageURI(Uri.fromFile(file))
+            } else {
+                ivWidgetBigPhoto.setImageResource(R.drawable.pink_background)
+            }
+        } ?: run {
+            ivWidgetBigPhoto.setImageResource(R.drawable.pink_background)
+        }
+
+        smallPhoto1Path?.let { path ->
+            val file = File(path)
+            if (file.exists()) {
+                ivWidgetSmallPhoto1.setImageURI(Uri.fromFile(file))
+            } else {
+                ivWidgetSmallPhoto1.setImageResource(R.drawable.pink_background)
+            }
+        } ?: run {
+            ivWidgetSmallPhoto1.setImageResource(R.drawable.pink_background)
+        }
+
+        smallPhoto2Path?.let { path ->
+            val file = File(path)
+            if (file.exists()) {
+                ivWidgetSmallPhoto2.setImageURI(Uri.fromFile(file))
+            } else {
+                ivWidgetSmallPhoto2.setImageResource(R.drawable.pink_background)
+            }
+        } ?: run {
+            ivWidgetSmallPhoto2.setImageResource(R.drawable.pink_background)
+        }
+
+        smallPhoto3Path?.let { path ->
+            val file = File(path)
+            if (file.exists()) {
+                ivWidgetSmallPhoto3.setImageURI(Uri.fromFile(file))
+            } else {
+                ivWidgetSmallPhoto3.setImageResource(R.drawable.pink_background)
+            }
+        } ?: run {
+            ivWidgetSmallPhoto3.setImageResource(R.drawable.pink_background)
+        }
     }
 
     private fun calculateDaysTogether() {
