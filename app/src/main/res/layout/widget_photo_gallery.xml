@@ -1,34 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:background="#FFF8F0"
     android:padding="8dp">
 
+    <!-- Большое фото -->
     <ImageView
-        android:id="@+id/ivPhoto1"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
+        android:id="@+id/ivBigPhoto"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
         android:scaleType="centerCrop"
         android:src="@drawable/ic_person" />
 
-    <ImageView
-        android:id="@+id/ivPhoto2"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
+    <!-- Три маленьких фото -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1"
-        android:scaleType="centerCrop"
-        android:src="@drawable/ic_person"
-        android:layout_marginStart="4dp" />
+        android:orientation="horizontal"
+        android:layout_marginTop="6dp">
 
-    <ImageView
-        android:id="@+id/ivPhoto3"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:scaleType="centerCrop"
-        android:src="@drawable/ic_person"
-        android:layout_marginStart="4dp" />
+        <ImageView
+            android:id="@+id/ivPhoto1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_person" />
 
+        <ImageView
+            android:id="@+id/ivPhoto2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_person"
+            android:layout_marginStart="4dp" />
+
+        <ImageView
+            android:id="@+id/ivPhoto3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_person"
+            android:layout_marginStart="4dp" />
+
+    </LinearLayout>
 </LinearLayout>

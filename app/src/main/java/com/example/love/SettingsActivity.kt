@@ -12,7 +12,6 @@ import android.util.Base64
 import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import java.io.ByteArrayOutputStream
@@ -96,9 +95,14 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setImageView(imageView: ImageView, file: File?) {
-        if (file?.exists() == true) {
-            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-            imageView.setImageURI(uri)
+        if (file?.exists() == true && !isFinishing && !isDestroyed) {
+            try {
+                // Для настроек используем URI — это безопасно внутри приложения
+                val uri = Uri.fromFile(file)
+                imageView.setImageURI(uri)
+            } catch (e: Exception) {
+                Log.e("SET_IMAGE", "Ошибка отображения фото", e)
+            }
         }
     }
 
@@ -120,7 +124,6 @@ class SettingsActivity : AppCompatActivity() {
                 startActivityForResult(this, requestCode)
             }
         } catch (e: Exception) {
-            Log.e("SettingsActivity", "Галерея недоступна", e)
             Toast.makeText(this, "Галерея недоступна", Toast.LENGTH_SHORT).show()
         }
     }
@@ -150,21 +153,21 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun copyUriToInternalFile(uri: Uri): File? {
         return try {
-            contentResolver.openInputStream(uri)?.use { inputStream ->
-                val fileName = "photo_${System.currentTimeMillis()}.jpg"
-                val file = File(filesDir, fileName)
-
-                val bitmap = BitmapFactory.decodeStream(inputStream) ?: return null
-                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 400, 400, true)
-
-                FileOutputStream(file).use { outputStream ->
-                    scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
+            val file = File(filesDir, "photo_${System.currentTimeMillis()}.jpg")
+            contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(file).use { output ->
+                    input.copyTo(output)
                 }
-
+            }
+            if (file.exists() && file.length() > 0) {
+                Log.d("PHOTO_SAVE", "Файл скопирован: ${file.absolutePath}")
                 file
+            } else {
+                file.delete()
+                null
             }
         } catch (e: Exception) {
-            Log.e("SettingsActivity", "Ошибка копирования файла", e)
+            Log.e("PHOTO_SAVE", "Ошибка копирования", e)
             null
         }
     }
@@ -183,7 +186,7 @@ class SettingsActivity : AppCompatActivity() {
             editor.putString("name2", etName2.text.toString().ifEmpty { "Партнёр 2" })
             editor.putLong("startDate", startDateMillis)
 
-            // Сохраняем пути
+            // Сохраняем пути (для настроек)
             editor.putString("avatar1_path", avatar1File?.absolutePath)
             editor.putString("avatar2_path", avatar2File?.absolutePath)
             editor.putString("widgetBigPhoto_path", bigPhotoFile?.absolutePath)
@@ -191,17 +194,50 @@ class SettingsActivity : AppCompatActivity() {
             editor.putString("widgetSmallPhoto2_path", smallPhoto2File?.absolutePath)
             editor.putString("widgetSmallPhoto3_path", smallPhoto3File?.absolutePath)
 
-            // Сохраняем Base64 миниатюры для виджета
+            // 🔑 Сохраняем Base64 для ВИДЖЕТА (главное!)
+            bigPhotoFile?.let { file ->
+                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                val scaled = Bitmap.createScaledBitmap(bitmap, 400, 400, true)
+                editor.putString("widgetBigPhoto_base64", bitmapToBase64(scaled))
+                bitmap.recycle()
+                scaled.recycle()
+            }
+            smallPhoto1File?.let { file ->
+                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                val scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true)
+                editor.putString("widgetSmallPhoto1_base64", bitmapToBase64(scaled))
+                bitmap.recycle()
+                scaled.recycle()
+            }
+            smallPhoto2File?.let { file ->
+                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                val scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true)
+                editor.putString("widgetSmallPhoto2_base64", bitmapToBase64(scaled))
+                bitmap.recycle()
+                scaled.recycle()
+            }
+            smallPhoto3File?.let { file ->
+                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                val scaled = Bitmap.createScaledBitmap(bitmap, 120, 120, true)
+                editor.putString("widgetSmallPhoto3_base64", bitmapToBase64(scaled))
+                bitmap.recycle()
+                scaled.recycle()
+            }
+
+            // Аватарки (если используются в других виджетах)
             avatar1File?.let { file ->
                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)
                 val scaled = Bitmap.createScaledBitmap(bitmap, 80, 80, true)
                 editor.putString("avatar1_base64", bitmapToBase64(scaled))
+                bitmap.recycle()
+                scaled.recycle()
             }
-
             avatar2File?.let { file ->
                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)
                 val scaled = Bitmap.createScaledBitmap(bitmap, 80, 80, true)
                 editor.putString("avatar2_base64", bitmapToBase64(scaled))
+                bitmap.recycle()
+                scaled.recycle()
             }
 
             editor.apply()
@@ -209,21 +245,22 @@ class SettingsActivity : AppCompatActivity() {
             setResult(RESULT_OK)
             finish()
         } catch (e: Exception) {
-            Log.e("SettingsActivity", "Ошибка при сохранении", e)
+            Log.e("SAVE_ERROR", "Ошибка при сохранении", e)
         }
     }
 
     private fun updateWidgets() {
         val appWidgetManager = AppWidgetManager.getInstance(this)
-
-        val daysWidget = ComponentName(this, DaysTogetherWidget::class.java)
-        appWidgetManager.getAppWidgetIds(daysWidget).forEach { id ->
-            DaysTogetherWidget.updateAppWidget(this, appWidgetManager, id)
+        val galleryComponent = ComponentName(this, PhotoGalleryWidget::class.java)
+        val galleryIds = appWidgetManager.getAppWidgetIds(galleryComponent)
+        for (id in galleryIds) {
+            PhotoGalleryWidget.updateAppWidget(this, appWidgetManager, id)
         }
 
-        val galleryWidget = ComponentName(this, PhotoGalleryWidget::class.java)
-        appWidgetManager.getAppWidgetIds(galleryWidget).forEach { id ->
-            PhotoGalleryWidget.updateAppWidget(this, appWidgetManager, id)
+        val daysComponent = ComponentName(this, DaysTogetherWidget::class.java)
+        val daysIds = appWidgetManager.getAppWidgetIds(daysComponent)
+        for (id in daysIds) {
+            DaysTogetherWidget.updateAppWidget(this, appWidgetManager, id)
         }
     }
 
