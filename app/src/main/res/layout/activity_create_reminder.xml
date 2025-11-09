@@ -60,7 +60,7 @@
             android:layout_height="wrap_content"
             android:hint="Введите тему (например: Годовщина, День рождения...)"
             android:textColor="@color/black"
-            android:textColorHint="@color/light_pink"
+            android:textColorHint="@color/black"
             android:background="@drawable/pink_background"
             android:padding="12dp"
             android:layout_marginBottom="32dp" />
