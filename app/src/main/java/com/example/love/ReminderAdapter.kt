@@ -1,41 +1,54 @@
-// ReminderAdapter.kt
 package com.example.love
 
 import android.content.Context
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
-import android.widget.TextView
+import android.widget.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 class ReminderAdapter(
     private val context: Context,
-    private val reminders: List<Reminder>
+    private val reminders: MutableList<Reminder>
 ) : BaseAdapter() {
+
+    // Callback для удаления — вызывается из AnniversaryActivity
+    var onDeleteClickListener: ((Reminder) -> Unit)? = null
 
     override fun getCount() = reminders.size
     override fun getItem(position: Int) = reminders[position]
     override fun getItemId(position: Int) = position.toLong()
 
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val view = convertView ?: View.inflate(context, R.layout.item_reminder, null)
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val view = convertView ?: LayoutInflater.from(context)
+            .inflate(R.layout.item_reminder, parent, false)
 
         val reminder = reminders[position]
-        val titleView = view.findViewById<TextView>(R.id.tvReminderTitle)
-        val dateView = view.findViewById<TextView>(R.id.tvReminderDate)
-        val daysView = view.findViewById<TextView>(R.id.tvDaysLeft)
 
-        titleView.text = reminder.title
+        // Находим TextView по ID — они точно есть (из вашего item_reminder.xml)
+        val title = view.findViewById<TextView>(R.id.tvReminderTitle)
+        val date = view.findViewById<TextView>(R.id.tvReminderDate)
+        val daysLeft = view.findViewById<TextView>(R.id.tvDaysLeft)
 
-        val formatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-        dateView.text = formatter.format(Date(reminder.date))
+        // ⚠️ Кнопка — НЕ btnDeleteReminder, а btnBackToHome (см. ваш item_reminder.xml)
+        val deleteButton = view.findViewById<Button>(R.id.btnDeleteReminder)
 
-        val now = Calendar.getInstance().timeInMillis
-        val diff = reminder.date - now
-        val daysLeft = if (diff > 0) diff / (1000 * 60 * 60 * 24) else 0
-        daysView.text = "$daysLeft дней"
+        // Заполняем данными
+        title.text = reminder.title
+        date.text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(reminder.date))
+        daysLeft.text = "${calculateDaysLeft(reminder.date)} дней"
+
+        // 🔥 Подключаем обработчик удаления
+        deleteButton.setOnClickListener {
+            onDeleteClickListener?.invoke(reminder)
+        }
 
         return view
+    }
+
+    private fun calculateDaysLeft(dateMillis: Long): Int {
+        val now = System.currentTimeMillis()
+        return ((dateMillis - now) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
     }
 }
