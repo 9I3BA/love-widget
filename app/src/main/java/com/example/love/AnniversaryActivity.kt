@@ -3,10 +3,8 @@ package com.example.love
 import android.content.Intent
 import android.os.Bundle
 import android.widget.*
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import java.text.SimpleDateFormat
-import java.util.*
+import android.widget.Toast
 
 class AnniversaryActivity : AppCompatActivity() {
 
@@ -27,49 +25,43 @@ class AnniversaryActivity : AppCompatActivity() {
         btnBackToHome = findViewById(R.id.btnBackToHome)
         emptyView = findViewById(R.id.emptyView)
 
-        // Настройка адаптера
         adapter = ReminderAdapter(this, reminders)
         remindersListView.adapter = adapter
         remindersListView.emptyView = emptyView
 
-        // Загрузка напоминаний
+        adapter.onDeleteClickListener = { reminder ->
+            // 1. Удаляем из менеджера
+            ReminderManager.getInstance(this).deleteReminder(reminder.id)
+
+            // 2. Удаляем из локального списка
+            reminders.remove(reminder)
+
+            // 3. Обновляем адаптер
+            adapter.notifyDataSetChanged()
+
+            Toast.makeText(this, "✅ Напоминание удалено", Toast.LENGTH_SHORT).show()
+        }
         loadReminders()
 
-        // Обработчик кнопки добавления
         btnAddReminder.setOnClickListener {
             val intent = Intent(this, CreateReminderActivity::class.java)
             startActivityForResult(intent, REQUEST_CREATE_REMINDER)
         }
 
-        // Обработчик кнопки возврата в главное меню
         btnBackToHome.setOnClickListener {
             startActivity(Intent(this, HomeActivity::class.java))
         }
+    }
 
-        // Долгое нажатие для удаления
-        remindersListView.setOnItemLongClickListener { _, _, position, _ ->
-            showDeleteDialog(position)
-            true
-        }
+    override fun onResume() {
+        super.onResume()
+        loadReminders()
     }
 
     private fun loadReminders() {
         reminders.clear()
         reminders.addAll(ReminderManager.getInstance(this).loadReminders())
         adapter.notifyDataSetChanged()
-    }
-
-    private fun showDeleteDialog(position: Int) {
-        val reminder = reminders[position]
-        AlertDialog.Builder(this)
-            .setTitle("Удалить напоминание?")
-            .setMessage("Вы уверены, что хотите удалить '${reminder.title}'?")
-            .setPositiveButton("Да") { _, _ ->
-                ReminderManager.getInstance(this).deleteReminder(reminder.id)
-                loadReminders()
-            }
-            .setNegativeButton("Нет", null)
-            .show()
     }
 
     companion object {
