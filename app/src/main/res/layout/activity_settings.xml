@@ -99,7 +99,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="30.10.2020"
-            android:textColor="@color/dark_pink"
+            android:textColor="@color/black"
             android:background="@drawable/pink_background"
             android:layout_marginBottom="24dp" />
 
