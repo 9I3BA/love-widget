@@ -25,6 +25,7 @@ class AnniversaryActivity : AppCompatActivity() {
         btnBackToHome = findViewById(R.id.btnBackToHome)
         emptyView = findViewById(R.id.emptyView)
 
+
         adapter = ReminderAdapter(this, reminders)
         remindersListView.adapter = adapter
         remindersListView.emptyView = emptyView
