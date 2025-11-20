@@ -47,8 +47,10 @@ class ReminderAdapter(
         return view
     }
 
+    // В ReminderAdapter.kt замените:
     private fun calculateDaysLeft(dateMillis: Long): Int {
         val now = System.currentTimeMillis()
-        return ((dateMillis - now) / (24 * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
+        val days = ((dateMillis - now + 12 * 60 * 60 * 1000) / (24 * 60 * 60 * 1000)).toInt()
+        return if (days >= 0) days else -1 // или используйте циклическую логику, если хотите
     }
 }
