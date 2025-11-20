@@ -18,48 +18,16 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".WelcomeActivity"
-            android:exported="false" />
+        <activity android:name=".WelcomeActivity" android:exported="false" />
+        <activity android:name=".DatePickerActivity" android:exported="false" />
+        <activity android:name=".ProfileSetupActivity" android:exported="false" />
+        <activity android:name=".HomeActivity" android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".AnniversaryActivity" android:exported="false" />
+        <activity android:name=".CreateReminderActivity" android:exported="false" />
+        <activity android:name=".NoteActivity" android:parentActivityName=".HomeActivity" />
 
-        <activity
-            android:name=".DatePickerActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ProfileSetupActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".HomeActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".AnniversaryActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".CreateReminderActivity"
-            android:exported="false" />
-        <activity
-            android:name=".NoteActivity"
-            android:parentActivityName=".HomeActivity" />
-
-        <receiver
-            android:name=".DaysTogetherWidget"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/days_together_widget_info" />
-        </receiver>
-
+        <!-- Виджет "Дней вместе" (убран дубль) -->
         <receiver
             android:name=".DaysTogetherWidget"
             android:exported="true">
@@ -78,6 +46,29 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_test_info" />
+        </receiver>
+
+        <!-- Единственный FileProvider -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- Виджет галереи -->
+        <receiver
+            android:name=".PhotoGalleryWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/photo_gallery_widget_info" />
         </receiver>
         <provider
             android:name="androidx.core.content.FileProvider"

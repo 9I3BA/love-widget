@@ -12,7 +12,6 @@ class DatePickerActivity : AppCompatActivity() {
     private lateinit var tvSelectedDate: TextView
     private lateinit var btnPickDate: Button
     private lateinit var btnNext: Button
-    private lateinit var btnCreateReminder: Button
 
     private var selectedDate: Calendar = Calendar.getInstance()
 
@@ -23,16 +22,11 @@ class DatePickerActivity : AppCompatActivity() {
         tvSelectedDate = findViewById(R.id.tvSelectedDate)
         btnPickDate = findViewById(R.id.btnPickDate)
         btnNext = findViewById(R.id.btnNext)
-        btnCreateReminder = findViewById(R.id.btnCreateReminder)
 
         updateDateDisplay()
 
         btnPickDate.setOnClickListener {
             showDatePicker()
-        }
-
-        btnCreateReminder.setOnClickListener {
-            startActivity(Intent(this, CreateReminderActivity::class.java))
         }
 
         btnNext.setOnClickListener {
@@ -63,5 +57,6 @@ class DatePickerActivity : AppCompatActivity() {
         editor.apply()
 
         startActivity(Intent(this, ProfileSetupActivity::class.java))
+        finish() // опционально: закрыть текущую активность, чтобы нельзя было вернуться назад
     }
 }
