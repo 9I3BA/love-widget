@@ -109,14 +109,14 @@ class ProfileSetupActivity : AppCompatActivity() {
             avatar1Uri?.let { uri ->
                 val filePath = copyUriToFile(uri)
                 if (filePath != null) {
-                    editor.putString("avatar1", filePath)
+                    editor.putString("avatar1_path", filePath)
                 }
             }
 
             avatar2Uri?.let { uri ->
                 val filePath = copyUriToFile(uri)
                 if (filePath != null) {
-                    editor.putString("avatar2", filePath)
+                    editor.putString("avatar2_path", filePath)
                 }
             }
 
