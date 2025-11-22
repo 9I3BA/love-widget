@@ -9,11 +9,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Напоминания"
-        android:textSize="22sp"
-        android:textColor="@color/black"
         android:layout_gravity="center"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="24dp"
+        android:text="Напоминания"
+        android:textColor="@color/black"
+        android:textSize="22sp" />
 
     <ListView
         android:id="@+id/remindersListView"
@@ -28,10 +28,10 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:text="Нет напоминаний"
-        android:textSize="16sp"
-        android:textColor="@color/black"
         android:gravity="center"
+        android:text="Нет напоминаний"
+        android:textColor="@color/black"
+        android:textSize="16sp"
         android:visibility="gone" />
 
 
@@ -39,11 +39,11 @@
         android:id="@+id/btnAddReminder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Добавить напоминание"
         android:layout_gravity="center"
+        android:layout_marginTop="16dp"
         android:backgroundTint="@color/dark_pink"
-        android:textColor="@color/white"
-        android:layout_marginTop="16dp" />
+        android:text="Добавить напоминание"
+        android:textColor="@color/white" />
 
     <Button
         android:id="@+id/btnBackToHome"

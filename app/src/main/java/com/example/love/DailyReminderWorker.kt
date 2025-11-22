@@ -1,13 +1,16 @@
 package com.example.love
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
@@ -25,38 +28,32 @@ class DailyReminderWorker(
 
         val now = System.currentTimeMillis()
 
-        // 🔍 1. Будущие напоминания
-        val upcoming = reminders
-            .filter { it.date > now }
-            .map { it to daysDiff(it.date, now) }
-            .sortedBy { it.second }
-
-        // ✅ Ближайшая будущая ИЛИ циклическая (если все прошли)
-        val (next, days) = upcoming.firstOrNull()
-            ?: run {
-                val cyclic = reminders
-                    .map { it to cyclicDaysDiff(it.date, now) }
-                    .minByOrNull { it.second }
-                    ?: return@withContext Result.success()
-                cyclic
+        // 🔁 Для КАЖДОЙ даты — считаем циклически (даже будущей)
+        val nearest = reminders
+            .map { reminder ->
+                val daysLeft = calculateCyclicDaysLeft(reminder.date, now)
+                reminder to daysLeft
             }
+            .minByOrNull { it.second } ?: return@withContext Result.success()
 
-        showNotification(next.title, days)
+        val (nextReminder, days) = nearest
+        showNotification(nextReminder.title, days)
         Result.success()
     }
 
-    private fun daysDiff(dateMillis: Long, now: Long): Int {
-        return ((dateMillis - now + 12 * 60 * 60 * 1000) / (24 * 60 * 60 * 1000)).toInt()
-    }
-
-    private fun cyclicDaysDiff(dateMillis: Long, now: Long): Int {
+    // ✅ Основной метод: сколько дней до ближайшего повторения (включая будущий год)
+    private fun calculateCyclicDaysLeft(dateMillis: Long, now: Long): Int {
         val cal = Calendar.getInstance().apply { timeInMillis = dateMillis }
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         cal.set(Calendar.YEAR, currentYear)
+
+        // Если в этом году уже прошла — переносим на следующий
         if (cal.timeInMillis <= now) {
             cal.add(Calendar.YEAR, 1)
         }
-        return daysDiff(cal.timeInMillis, now)
+
+        val nextOccurrence = cal.timeInMillis
+        return ((nextOccurrence - now + 12 * 60 * 60 * 1000) / (24 * 60 * 60 * 1000)).toInt()
     }
 
     private fun loadReminders(): List<Reminder> {
@@ -76,8 +73,12 @@ class DailyReminderWorker(
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                channelId, "Напоминания о любви", NotificationManager.IMPORTANCE_DEFAULT
-            ).apply { description = "Ближайшая памятная дата" }
+                channelId,
+                "Напоминания о любви",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Ближайшая памятная дата"
+            }
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(channel)
         }
@@ -99,6 +100,15 @@ class DailyReminderWorker(
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(pending)
             .setAutoCancel(true)
+
+        // 🛡️ Проверка разрешения перед отправкой (устраняет warning)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+        }
 
         NotificationManagerCompat.from(context).notify(id, builder.build())
     }

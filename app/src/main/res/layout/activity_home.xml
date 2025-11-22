@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/pink"
@@ -19,14 +20,15 @@
             android:layout_height="wrap_content"
             android:gravity="center">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivYou"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
                 android:src="@drawable/ic_person"
                 android:background="@drawable/pink_background"
                 android:contentDescription="You"
-                android:scaleType="centerCrop" />
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/CircularImageView" />
 
             <ImageView
                 android:layout_width="24dp"
@@ -35,14 +37,14 @@
                 android:layout_marginHorizontal="8dp"
                 android:contentDescription="Heart" />
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivPartner"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
                 android:src="@drawable/ic_person"
-                android:background="@drawable/pink_background"
                 android:contentDescription="Partner"
-                android:scaleType="centerCrop" />
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/CircularImageView" />
         </LinearLayout>
 
         <!-- Центрированные имена под аватарами -->
@@ -65,11 +67,11 @@
                 android:id="@+id/tvName2"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Партнёр 2"
-                android:textSize="14sp"
-                android:textColor="@color/black"
+                android:layout_marginStart="32dp"
                 android:gravity="center"
-                android:layout_marginStart="32dp" />
+                android:text="Партнёр 2"
+                android:textColor="@color/black"
+                android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -90,7 +92,8 @@
         android:id="@+id/ivWidgetBigPhoto"
         android:layout_width="match_parent"
         android:layout_height="200dp"
-        android:src="@drawable/pink_background"
+        android:src="@drawable/ic_person"
+
         android:contentDescription="Большое фото"
         android:scaleType="centerCrop"
         android:layout_marginBottom="16dp" />
@@ -107,7 +110,7 @@
             android:id="@+id/ivWidgetSmallPhoto1"
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:src="@drawable/pink_background"
+            android:src="@drawable/ic_person"
             android:contentDescription="Маленькое фото 1"
             android:scaleType="centerCrop"
             android:layout_marginEnd="8dp" />
@@ -116,7 +119,7 @@
             android:id="@+id/ivWidgetSmallPhoto2"
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:src="@drawable/pink_background"
+            android:src="@drawable/ic_person"
             android:contentDescription="Маленькое фото 2"
             android:scaleType="centerCrop"
             android:layout_marginEnd="8dp"
@@ -126,7 +129,7 @@
             android:id="@+id/ivWidgetSmallPhoto3"
             android:layout_width="80dp"
             android:layout_height="80dp"
-            android:src="@drawable/pink_background"
+            android:src="@drawable/ic_person"
             android:contentDescription="Маленькое фото 3"
             android:scaleType="centerCrop"
             android:layout_marginStart="8dp" />
@@ -159,19 +162,19 @@
             android:id="@+id/btnSettings"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/ic_settings"
+            android:layout_marginHorizontal="30dp"
             android:background="@null"
-            android:layout_marginHorizontal="16dp"
-            android:contentDescription="Settings" />
+            android:contentDescription="Settings"
+            android:src="@drawable/ic_settings" />
 
         <ImageButton
             android:id="@+id/btnNotes"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_notes"
+            android:layout_margin="1dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Заметки"
-            android:layout_margin="16dp" />
+            android:src="@drawable/ic_notes" />
     </LinearLayout>
 
 </LinearLayout>

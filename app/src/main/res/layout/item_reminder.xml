@@ -3,7 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/white"
+    android:elevation="1dp"
+    android:layout_marginVertical="4dp">
 
     <TextView
         android:id="@+id/tvReminderTitle"
@@ -12,6 +15,7 @@
         android:text="Годовщина"
         android:textSize="18sp"
         android:textColor="@color/black"
+        android:textStyle="bold"
         android:layout_marginBottom="4dp" />
 
     <TextView
@@ -20,7 +24,7 @@
         android:layout_height="wrap_content"
         android:text="30.10.2025"
         android:textSize="14sp"
-        android:textColor="@color/black"
+        android:textColor="#666666"
         android:layout_marginBottom="8dp" />
 
     <TextView
@@ -29,16 +33,48 @@
         android:layout_height="wrap_content"
         android:text="328 дней"
         android:textSize="16sp"
-        android:textColor="@color/black"
+        android:textColor="@color/dark_pink"
         android:layout_marginBottom="12dp" />
 
+    <!-- 🔁 Кнопки для прошедших событий (скрыты по умолчанию) -->
+    <LinearLayout
+        android:id="@+id/llExpiredActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/btnResume"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Возобновить"
+            android:textSize="12sp"
+            android:backgroundTint="@color/dark_pink"
+            android:textColor="@color/white" />
+
+        <Button
+            android:id="@+id/btnMakeAnnual"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Ежегодно"
+            android:textSize="12sp"
+            android:backgroundTint="#71AFDE"
+            android:textColor="@color/white" />
+    </LinearLayout>
+
+    <!-- ❌ Кнопка удаления (всегда видна) -->
     <Button
         android:id="@+id/btnDeleteReminder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_marginTop="8dp"
-        android:backgroundTint="@color/dark_pink"
+        android:backgroundTint="#E91E63"
         android:text="Удалить напоминание"
         android:textColor="@color/white" />
 

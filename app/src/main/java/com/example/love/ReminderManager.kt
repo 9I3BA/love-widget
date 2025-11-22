@@ -3,6 +3,7 @@ package com.example.love
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.lang.reflect.Type
 
 class ReminderManager private constructor(context: Context) {
     private val prefs = context.getSharedPreferences("LoveWidget", Context.MODE_PRIVATE)
@@ -26,17 +27,23 @@ class ReminderManager private constructor(context: Context) {
 
     fun loadReminders(): List<Reminder> {
         val json = prefs.getString("reminders", null)
-        return if (json != null) {
-            val type = object : TypeToken<List<Reminder>>() {}.type
-            gson.fromJson(json, type) ?: emptyList()
+        return if (json != null && json != "[]") {
+            try {
+                val type: Type = object : TypeToken<List<Reminder>>() {}.type
+                gson.fromJson(json, type) ?: emptyList()
+            } catch (e: Exception) {
+                // При ошибке парсинга — создаём чистый список
+                emptyList()
+            }
         } else {
-            // Создаём напоминание по умолчанию (годовщина)
-            val startDate = prefs.getLong("startDate", System.currentTimeMillis())
-            val anniversary = Reminder(
-                title = "Годовщина",
-                date = startDate + (365L * 24 * 60 * 60 * 1000) // +1 год
-            )
-            listOf(anniversary)
+            // Только если напоминаний совсем нет — создаём годовщину
+            val startDate = prefs.getLong("startDate", -1L)
+            if (startDate > 0) {
+                val anniversaryDate = startDate + (365L * 24 * 60 * 60 * 1000)
+                listOf(Reminder(title = "Годовщина", date = anniversaryDate))
+            } else {
+                emptyList()
+            }
         }
     }
 
@@ -49,5 +56,16 @@ class ReminderManager private constructor(context: Context) {
     fun deleteReminder(reminderId: Long) {
         val reminders = loadReminders().filter { it.id != reminderId }
         saveReminders(reminders)
+    }
+
+    // ✅ НОВЫЙ МЕТОД — обновление существующего напоминания
+    fun updateReminder(updatedReminder: Reminder) {
+        val reminders = loadReminders().toMutableList()
+        val index = reminders.indexOfFirst { it.id == updatedReminder.id }
+        if (index != -1) {
+            reminders[index] = updatedReminder
+            saveReminders(reminders)
+        }
+        // Если не найдено — игнорируем (можно добавить лог)
     }
 }

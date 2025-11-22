@@ -112,18 +112,19 @@
             android:layout_marginBottom="16dp" />
 
         <!-- Большое фото -->
+
+        <!-- 3 маленьких фото в горизонтальном LinearLayout -->
         <ImageView
             android:id="@+id/ivWidgetBigPhoto"
             android:layout_width="match_parent"
             android:layout_height="200dp"
-            android:src="@drawable/pink_background"
-            android:contentDescription="Большое фото для виджета"
+            android:layout_marginBottom="16dp"
             android:clickable="true"
+            android:contentDescription="Большое фото для виджета"
             android:focusable="true"
             android:scaleType="centerCrop"
-            android:layout_marginBottom="16dp" />
+            android:src="@drawable/ic_person" />
 
-        <!-- 3 маленьких фото в горизонтальном LinearLayout -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -135,7 +136,7 @@
                 android:id="@+id/ivWidgetSmallPhoto1"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:src="@drawable/pink_background"
+                android:src="@drawable/ic_person"
                 android:contentDescription="Маленькое фото 1"
                 android:clickable="true"
                 android:focusable="true"
@@ -146,7 +147,7 @@
                 android:id="@+id/ivWidgetSmallPhoto2"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:src="@drawable/pink_background"
+                android:src="@drawable/ic_person"
                 android:contentDescription="Маленькое фото 2"
                 android:clickable="true"
                 android:focusable="true"
@@ -158,7 +159,7 @@
                 android:id="@+id/ivWidgetSmallPhoto3"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:src="@drawable/pink_background"
+                android:src="@drawable/ic_person"
                 android:contentDescription="Маленькое фото 3"
                 android:clickable="true"
                 android:focusable="true"

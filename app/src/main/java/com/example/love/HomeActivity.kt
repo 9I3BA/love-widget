@@ -1,20 +1,34 @@
 package com.example.love
 
-import java.util.concurrent.TimeUnit
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
-import java.io.File
-import java.util.*
-import kotlin.math.abs
 import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.work.*
-import android.os.Build
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.File
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
+import kotlin.math.abs
+
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var tvDaysTogether: TextView
@@ -54,11 +68,21 @@ class HomeActivity : AppCompatActivity() {
         loadProfileData()
         calculateDaysTogether()
 
-        // 🔔 —— НОВЫЕ СТРОКИ ——
+        // 🔔 Запрос разрешения и планирование напоминаний
         requestNotificationPermissionIfNeeded()
         scheduleDailyReminder()
 
-        findViewById<ImageButton>(R.id.btnNotes).setOnClickListener {
+        // ✅ Показываем уведомление при старте
+        showStartupReminderIfNeeded()
+
+        // ✅ Показываем уведомление ТОЛЬКО если активити запущена как главная (не при возврате)
+        if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0 &&
+            (intent.flags and Intent.FLAG_ACTIVITY_CLEAR_TOP == 0) &&
+            (savedInstanceState == null)
+        ) {
+            showStartupReminderIfNeeded()
+        }
+        btnNotes.setOnClickListener {
             startActivity(Intent(this, NoteActivity::class.java))
         }
 
@@ -78,8 +102,7 @@ class HomeActivity : AppCompatActivity() {
         if (requestCode == REQUEST_SETTINGS && resultCode == RESULT_OK) {
             loadProfileData()
             calculateDaysTogether()
-            // 🔁 Обновляем напоминание при изменении даты
-            scheduleDailyReminder()
+            scheduleDailyReminder()  // обновляем при изменении даты
         }
     }
 
@@ -99,7 +122,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun loadAvatar(path: String?, imageView: ImageView) {
-        if (path != null) {
+        if (!path.isNullOrEmpty()) {
             val file = File(path)
             if (file.exists()) {
                 try {
@@ -115,7 +138,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun loadPhoto(path: String?, imageView: ImageView) {
-        if (path != null) {
+        if (!path.isNullOrEmpty()) {
             val file = File(path)
             if (file.exists()) {
                 try {
@@ -144,15 +167,32 @@ class HomeActivity : AppCompatActivity() {
         val months = (days % 365) / 30
         val remainingDays = (days % 365) % 30
 
-        tvDaysTogether.text = "$years года $months месяцев $remainingDays день"
+        val parts = mutableListOf<String>()
+        if (years > 0) parts.add("${years} ${decline(years, "год", "года", "лет")}")
+        if (months > 0) parts.add("${months} ${decline(months, "месяц", "месяца", "месяцев")}")
+        if (remainingDays > 0 || parts.isEmpty()) {
+            parts.add("${remainingDays} ${decline(remainingDays, "день", "дня", "дней")}")
+        }
+
+        tvDaysTogether.text = parts.joinToString(" ")
     }
 
-    // ——— НОВЫЕ МЕТОДЫ ———
+    // Вспомогательная функция для склонения числительных
+    private fun decline(n: Long, one: String, few: String, many: String): String {
+        val mod10 = n % 10
+        val mod100 = n % 100
+        return when {
+            mod100 in 11..14 -> many
+            mod10 == 1L -> one
+            mod10 in 2L..4L -> few
+            else -> many
+        }
+    }
 
     private fun scheduleDailyReminder() {
         val workRequest = PeriodicWorkRequestBuilder<DailyReminderWorker>(
-            15, TimeUnit.MINUTES,  // ✅ теперь напоминание будет приходить каждые 15 минут
-            1, TimeUnit.MINUTES    // и первый запуск — через 1 минуту
+            15, TimeUnit.MINUTES,
+            1, TimeUnit.MINUTES
         )
             .setConstraints(
                 Constraints.Builder()
@@ -171,8 +211,10 @@ class HomeActivity : AppCompatActivity() {
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
-                != android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
                 ActivityCompat.requestPermissions(
                     this,
@@ -181,5 +223,102 @@ class HomeActivity : AppCompatActivity() {
                 )
             }
         }
+    }
+
+    // ✅ Уведомление при запуске приложения
+    private var isStartupReminderShown = false
+
+    private fun showStartupReminderIfNeeded() {
+        val prefs = getSharedPreferences("LoveWidget", MODE_PRIVATE)
+        val json = prefs.getString("reminders", "[]") ?: "[]"
+        val reminders = try {
+            val listType = object : TypeToken<List<Reminder>>() {}.type
+            Gson().fromJson<List<Reminder>>(json, listType)
+        } catch (e: Exception) {
+            emptyList<Reminder>()
+        }
+
+        if (reminders.isEmpty()) return
+
+        val now = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        var nearestReminder: Reminder? = null
+        var minDays = Long.MAX_VALUE
+
+        for (r in reminders) {
+            val target = Calendar.getInstance().apply { timeInMillis = r.date }.apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            val candidate = target.clone() as Calendar
+            candidate.set(Calendar.YEAR, now.get(Calendar.YEAR))
+
+            if (candidate.timeInMillis < now.timeInMillis) {
+                candidate.add(Calendar.YEAR, 1)
+            }
+
+            val diffMs = candidate.timeInMillis - now.timeInMillis
+            val diffDays = diffMs / (24 * 60 * 60 * 1000L)
+            if (diffDays < minDays) {
+                minDays = diffDays
+                nearestReminder = r
+            }
+        }
+
+        nearestReminder ?: return
+
+        // Показ уведомления
+        val channelId = "love_daily"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Напоминания о любви",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.createNotificationChannel(channel)
+        }
+
+        val intent = Intent(this, HomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pending = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val days = minDays.toInt()
+        val dayWord = when {
+            days % 10 == 1 && days % 100 != 11 -> "день"
+            days % 10 in 2..4 && days % 100 !in 12..14 -> "дня"
+            else -> "дней"
+        }
+
+        val text = "До события «${nearestReminder.title}» осталось: $days $dayWord"
+
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_heart)
+            .setContentTitle("❤️ Виджет Любви")
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) return
+        }
+
+        NotificationManagerCompat.from(this).notify(101, builder.build())
     }
 }

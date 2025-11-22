@@ -2,6 +2,7 @@ package com.example.love
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
@@ -25,23 +26,23 @@ class AnniversaryActivity : AppCompatActivity() {
         btnBackToHome = findViewById(R.id.btnBackToHome)
         emptyView = findViewById(R.id.emptyView)
 
-
         adapter = ReminderAdapter(this, reminders)
         remindersListView.adapter = adapter
         remindersListView.emptyView = emptyView
 
+        // 🔥 Удаляем напоминание
         adapter.onDeleteClickListener = { reminder ->
-            // 1. Удаляем из менеджера
             ReminderManager.getInstance(this).deleteReminder(reminder.id)
-
-            // 2. Удаляем из локального списка
             reminders.remove(reminder)
-
-            // 3. Обновляем адаптер
             adapter.notifyDataSetChanged()
-
             Toast.makeText(this, "✅ Напоминание удалено", Toast.LENGTH_SHORT).show()
         }
+
+        // 🔁 Обновляем список после изменений
+        adapter.onReminderUpdatedListener = {
+            loadReminders()
+        }
+
         loadReminders()
 
         btnAddReminder.setOnClickListener {
@@ -49,8 +50,9 @@ class AnniversaryActivity : AppCompatActivity() {
             startActivityForResult(intent, REQUEST_CREATE_REMINDER)
         }
 
+        // ✅ ИСПРАВЛЕНО: не создаём новую HomeActivity — просто возвращаемся
         btnBackToHome.setOnClickListener {
-            startActivity(Intent(this, HomeActivity::class.java))
+            finish() // ← вот и всё! теперь HomeActivity не пересоздаётся
         }
     }
 
@@ -63,6 +65,7 @@ class AnniversaryActivity : AppCompatActivity() {
         reminders.clear()
         reminders.addAll(ReminderManager.getInstance(this).loadReminders())
         adapter.notifyDataSetChanged()
+        emptyView.visibility = if (reminders.isEmpty()) View.VISIBLE else View.GONE
     }
 
     companion object {
