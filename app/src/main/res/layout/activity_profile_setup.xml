@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/pink"
     android:gravity="center"
     android:orientation="vertical"
@@ -30,7 +31,7 @@
             android:orientation="vertical"
             android:gravity="center">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivAvatar1"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
@@ -39,7 +40,9 @@
                 android:contentDescription="Ваш аватар"
                 android:clickable="true"
                 android:focusable="true"
-                android:scaleType="centerCrop" />
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/CircularImageView" />
+
 
             <EditText
                 android:id="@+id/etName1"
@@ -59,7 +62,7 @@
             android:orientation="vertical"
             android:gravity="center">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivAvatar2"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
@@ -68,7 +71,9 @@
                 android:contentDescription="Аватар партнёра"
                 android:clickable="true"
                 android:focusable="true"
-                android:scaleType="centerCrop" />
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/CircularImageView" />
+
 
             <EditText
                 android:id="@+id/etName2"
@@ -86,7 +91,7 @@
         android:id="@+id/btnNext"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="→"
+        android:text="Далее"
         android:backgroundTint="@color/dark_pink"
         android:textColor="@color/white" />
 
