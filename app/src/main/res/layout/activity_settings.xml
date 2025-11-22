@@ -2,6 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/pink"
     android:padding="24dp">
 
@@ -34,16 +35,17 @@
                 android:orientation="vertical"
                 android:gravity="center">
 
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/ivSettingsAvatar1"
                     android:layout_width="80dp"
                     android:layout_height="80dp"
-                    android:src="@drawable/ic_person"
                     android:background="@drawable/pink_background"
-                    android:contentDescription="Ваш аватар"
                     android:clickable="true"
+                    android:contentDescription="Ваш аватар"
                     android:focusable="true"
-                    android:scaleType="centerCrop" />
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_person"
+                    app:shapeAppearanceOverlay="@style/CircularImageView"/>
 
                 <EditText
                     android:id="@+id/etSettingsName1"
@@ -63,7 +65,8 @@
                 android:orientation="vertical"
                 android:gravity="center">
 
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
+
                     android:id="@+id/ivSettingsAvatar2"
                     android:layout_width="80dp"
                     android:layout_height="80dp"
@@ -72,7 +75,8 @@
                     android:contentDescription="Аватар партнёра"
                     android:clickable="true"
                     android:focusable="true"
-                    android:scaleType="centerCrop" />
+                    android:scaleType="centerCrop"
+                    app:shapeAppearanceOverlay="@style/CircularImageView"/>
 
                 <EditText
                     android:id="@+id/etSettingsName2"
