@@ -23,31 +23,123 @@ class DailyReminderWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val prefs = context.getSharedPreferences("LoveWidget", Context.MODE_PRIVATE)
+
+        // ✅ 1. Отправляем уведомление о днях вместе — ВСЕГДА (если есть startDate)
+        showDaysTogetherNotification(prefs)
+
+        // ✅ 2. Отправляем уведомление о ближайшем событии (как было)
         val reminders = loadReminders()
-        if (reminders.isEmpty()) return@withContext Result.success()
+        if (reminders.isNotEmpty()) {
+            val now = System.currentTimeMillis()
+            val nearest = reminders
+                .map { reminder ->
+                    val daysLeft = calculateCyclicDaysLeft(reminder.date, now)
+                    reminder to daysLeft
+                }
+                .minByOrNull { it.second } ?: return@withContext Result.success()
 
-        val now = System.currentTimeMillis()
+            val (nextReminder, days) = nearest
+            showEventNotification(nextReminder.title, days)
+        }
 
-        // 🔁 Для КАЖДОЙ даты — считаем циклически (даже будущей)
-        val nearest = reminders
-            .map { reminder ->
-                val daysLeft = calculateCyclicDaysLeft(reminder.date, now)
-                reminder to daysLeft
-            }
-            .minByOrNull { it.second } ?: return@withContext Result.success()
-
-        val (nextReminder, days) = nearest
-        showNotification(nextReminder.title, days)
         Result.success()
     }
 
-    // ✅ Основной метод: сколько дней до ближайшего повторения (включая будущий год)
+    // ✅ Новое: уведомление о "днях вместе"
+    private fun showDaysTogetherNotification(prefs: android.content.SharedPreferences) {
+        val startDate = prefs.getLong("startDate", -1)
+        if (startDate == -1L) return // дата не задана — не показываем
+
+        val now = System.currentTimeMillis()
+        val diff = now - startDate
+        if (diff < 0) return // дата в будущем
+
+        val totalDays = diff / (24 * 60 * 60 * 1000)
+
+        val years = totalDays / 365
+        val months = (totalDays % 365) / 30
+        val remainingDays = (totalDays % 365) % 30
+
+        val parts = mutableListOf<String>()
+        if (years > 0) parts.add("${years} ${declineYears(years)}")
+        if (months > 0) parts.add("${months} ${declineMonths(months)}")
+        if (remainingDays > 0 || parts.isEmpty()) {
+            parts.add("${remainingDays} ${declineDays(remainingDays)}")
+        }
+
+        val text = "Вы вместе уже: ${parts.joinToString(" ")} ❤️"
+
+        val channelId = "love_days_together"
+        val id = 102 // ⚠️ уникальный ID, чтобы не затирать событие (101)
+
+        createNotificationChannelIfNeeded(channelId, "Дни вместе", "Уведомление о длительности отношений")
+
+        val intent = Intent(context, HomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pending = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.ic_heart)
+            .setContentTitle("❤️ Дни вместе")
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        // 🔐 Проверка разрешения
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        NotificationManagerCompat.from(context).notify(id, builder.build())
+    }
+
+    // ✅ Вспомогательные функции для склонения (по типу)
+    private fun declineYears(n: Long) = decline(n, "год", "года", "лет")
+    private fun declineMonths(n: Long) = decline(n, "месяц", "месяца", "месяцев")
+    private fun declineDays(n: Long) = decline(n, "день", "дня", "дней")
+
+    private fun decline(n: Long, one: String, few: String, many: String): String {
+        val mod10 = n % 10
+        val mod100 = n % 100
+        return when {
+            mod100 in 11..14 -> many
+            mod10 == 1L -> one
+            mod10 in 2L..4L -> few
+            else -> many
+        }
+    }
+
+    // ✅ Вынесено — создаём канал один раз для любого ID
+    private fun createNotificationChannelIfNeeded(
+        channelId: String,
+        name: String,
+        description: String
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, name, NotificationManager.IMPORTANCE_DEFAULT).apply {
+                this.description = description
+            }
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.createNotificationChannel(channel)
+        }
+    }
+
+    // 🔁 Как было — без изменений
     private fun calculateCyclicDaysLeft(dateMillis: Long, now: Long): Int {
         val cal = Calendar.getInstance().apply { timeInMillis = dateMillis }
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         cal.set(Calendar.YEAR, currentYear)
 
-        // Если в этом году уже прошла — переносим на следующий
         if (cal.timeInMillis <= now) {
             cal.add(Calendar.YEAR, 1)
         }
@@ -67,21 +159,12 @@ class DailyReminderWorker(
         }
     }
 
-    private fun showNotification(title: String, daysLeft: Int) {
+    // ✅ Теперь showEventNotification — только для событий (старый showNotification → переименован)
+    private fun showEventNotification(title: String, daysLeft: Int) {
         val channelId = "love_daily"
         val id = 101
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Напоминания о любви",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Ближайшая памятная дата"
-            }
-            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.createNotificationChannel(channel)
-        }
+        createNotificationChannelIfNeeded(channelId, "Напоминания о любви", "Ближайшая памятная дата")
 
         val intent = Intent(context, HomeActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -91,7 +174,7 @@ class DailyReminderWorker(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val text = "До события «$title» осталось: $daysLeft ${decline(daysLeft)}"
+        val text = "До события «$title» осталось: $daysLeft ${declineDays(daysLeft.toLong())}"
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_heart)
@@ -101,21 +184,13 @@ class DailyReminderWorker(
             .setContentIntent(pending)
             .setAutoCancel(true)
 
-        // 🛡️ Проверка разрешения перед отправкой (устраняет warning)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                return
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
         }
 
         NotificationManagerCompat.from(context).notify(id, builder.build())
-    }
-
-    private fun decline(n: Int): String = when {
-        n % 10 == 1 && n % 100 != 11 -> "день"
-        n % 10 in 2..4 && n % 100 !in 12..14 -> "дня"
-        else -> "дней"
     }
 }

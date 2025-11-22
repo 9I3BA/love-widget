@@ -74,6 +74,7 @@ class HomeActivity : AppCompatActivity() {
 
         // ✅ Показываем уведомление при старте
         showStartupReminderIfNeeded()
+        showDaysTogetherStartupNotification()  // ← НОВОЕ: уведомление о днях вместе
 
         // ✅ Показываем уведомление ТОЛЬКО если активити запущена как главная (не при возврате)
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0 &&
@@ -81,7 +82,9 @@ class HomeActivity : AppCompatActivity() {
             (savedInstanceState == null)
         ) {
             showStartupReminderIfNeeded()
+            showDaysTogetherStartupNotification()  // ← НОВОЕ: повторно при первом запуске
         }
+
         btnNotes.setOnClickListener {
             startActivity(Intent(this, NoteActivity::class.java))
         }
@@ -306,7 +309,7 @@ class HomeActivity : AppCompatActivity() {
 
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_heart)
-            .setContentTitle("❤️ Виджет Любви")
+            .setContentTitle("❤️ Напоминание:")
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(pending)
@@ -320,5 +323,71 @@ class HomeActivity : AppCompatActivity() {
         }
 
         NotificationManagerCompat.from(this).notify(101, builder.build())
+    }
+
+    // ✅ НОВОЕ: Уведомление о днях вместе при запуске
+    private fun showDaysTogetherStartupNotification() {
+        val prefs = getSharedPreferences("LoveWidget", Context.MODE_PRIVATE)
+        val startDate = prefs.getLong("startDate", -1L)
+        if (startDate == -1L) return
+
+        val now = System.currentTimeMillis()
+        val diff = now - startDate
+        if (diff < 0) return
+
+        val totalDays = diff / (24 * 60 * 60 * 1000)
+
+        val years = totalDays / 365
+        val months = (totalDays % 365) / 30
+        val remainingDays = (totalDays % 365) % 30
+
+        val parts = mutableListOf<String>()
+        if (years > 0) parts.add("${years} ${decline(years, "год", "года", "лет")}")
+        if (months > 0) parts.add("${months} ${decline(months, "месяц", "месяца", "месяцев")}")
+        if (remainingDays > 0 || parts.isEmpty()) {
+            parts.add("${remainingDays} ${decline(remainingDays, "день", "дня", "дней")}")
+        }
+
+        val text = "Вы вместе уже: ${parts.joinToString(" ")} ❤️"
+
+        val channelId = "love_days_together"
+        val id = 102  // уникальный ID
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Дни вместе",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Ежедневное напоминание о длительности отношений"
+            }
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.createNotificationChannel(channel)
+        }
+
+        val intent = Intent(this, HomeActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pending = PendingIntent.getActivity(
+            this, 1, intent,  // requestCode = 1 — отличается от 0
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val builder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_heart)
+            .setContentTitle("❤️ Дни вместе:")
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) return
+        }
+
+        NotificationManagerCompat.from(this).notify(id, builder.build())
     }
 }

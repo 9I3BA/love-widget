@@ -30,18 +30,20 @@
             app:layout_constraintEnd_toStartOf="@id/heartIcon" />
 
         <!-- Сердце -->
+
+        <!-- Аватар 2 -->
         <ImageView
             android:id="@+id/heartIcon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/heart_icon"
+            android:layout_marginTop="28dp"
             android:contentDescription="Heart"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toEndOf="@id/ivYou"
+            android:src="@drawable/heart_icon"
             app:layout_constraintEnd_toStartOf="@id/ivPartner"
-            app:layout_constraintHorizontal_chainStyle="spread_inside" />
+            app:layout_constraintHorizontal_chainStyle="spread_inside"
+            app:layout_constraintStart_toEndOf="@id/ivYou"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Аватар 2 -->
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivPartner"
             android:layout_width="60dp"
