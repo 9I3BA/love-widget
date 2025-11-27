@@ -46,7 +46,7 @@
 - Язык: Kotlin (все классы на Kotlin), часть ресурсов — на русском (названия файлов!)  
 
 ---
-app/
+приложение/
 ├── src/main/java/com/example/love/
 │   ├── AnniversaryActivity.kt
 │   ├── CreateReminderActivity.kt
